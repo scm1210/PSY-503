@@ -1,0 +1,102 @@
+---
+title: "PSY-503: Lab 1"
+author: "Steven Mequiti"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE,fig.path = "lab1_plots/")
+options(scipen=999)
+```
+
+# Lab 1 {.tabset}
+
+## Install and load the following packages
+
+> Use pacman to load in the packages nicely
+
+```{r load packages, message=FALSE, include=T}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(coursekata,tidyverse,datasauRus, install = T) 
+```
+
+## Display the overall structure of this dataframe
+
+```{r}
+# Load the data
+
+df = datasaurus_dozen
+
+str(df)
+head(datasaurus_dozen,10)
+```
+
+> This dataset is in long format and has different x and y coordinates for various aspects of shapes. Dataset is a nominal variable and x and y are continuous variables
+
+## Printing unique dataset values
+
+```{r}
+print(unique(df$dataset))
+```
+
+> What's being printed are the unique nominal values that are present in the `dataset` column
+
+## Select a subset of lab1_data which has the value of "dataset" equal to "circle", and save it in a new variable temp_data
+
+> use `temp_data = df %>% filter(dataset == "circle")` to complete this
+
+```{r}
+temp_data = df %>% 
+  filter(dataset == "circle")
+
+```
+
+## Create Scatterplot of X and Y for the Circle data
+
+```{r circle-plot}
+
+plot_aes = theme_minimal() +
+  theme(legend.position = "none",
+        text = element_text(family = "Futura Medium"),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(hjust = 0.5, vjust = 1.5),
+        plot.caption = element_text(hjust = 1, size = 10),
+        legend.text = element_text(size = 7, family = "Futura Medium")  # Adjust legend text here
+  )
+gf_plot(temp_data, x = ~ x, y = ~ y) %>%
+  gf_point( color = 'blue') + plot_aes
+```
+
+## Make a dino
+
+```{r dino-plot}
+df %>% 
+  filter(dataset == "dino") %>% 
+  gf_plot(x = ~ x, y = ~ y) %>%
+  gf_point(color = 'dodgerblue2')
+
+```
+
+## Make a star
+
+```{r star-plot}
+df %>% 
+  filter(dataset == "star") %>% 
+  gf_plot(x = ~ x, y = ~ y) %>%
+  gf_point(color = 'orange')
+
+```
