@@ -1,0 +1,210 @@
+---
+title: "PSY-503: Lab 2"
+author: "Steven Mequiti"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document: default
+  word_document: default
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE, fig.path = "lab_2_plots/")
+options(scipen=999)
+set.seed(123)
+```
+
+# Lab 2 {.tabset}
+
+# Set-up Tasks {.tabset}
+
+## Install and Load Packages
+
+```{r load-packages}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, tinytex,ggdist,gghalves,knitr,install = T) 
+```
+
+## Task with YAML Header (A)
+
+-   Edit the YAML header / metadata to reflect your name.
+-   Title should say *Steven Mesquiti* and today's date: `r Sys.Date()`
+
+## Task with Markdown and R chunks {.tabset}
+
+### Write Formula for Variance
+
+$$variance for sample = \frac{\sum (x_i - \bar{x})^2}{n - 1}$$
+
+$$variance for population = \frac{\sum (x_i - \bar{x})^2}{n}$$ \### Compute SS for provided vectors
+
+```{r}
+compute_SS <- function(x) {
+  n <- length(x)
+  mean_x <- mean(x)
+  sum_squared_diff <- sum((x - mean_x)^2)
+  return(sum_squared_diff)
+}
+
+vector_a <- c(5, 5, 5, 5, 5)
+vector_b <- c(1, 3, 5, 7, 9)
+
+print(paste("Sum of squares for vector a:", compute_SS(vector_a)))
+print(paste("Sum of squares for vector b:", compute_SS(vector_b)))
+
+```
+
+## Descriptives (dplyr) and Visualization tasks {.tabset}
+
+```{r load datasauRs}
+library(datasauRus)
+lab2_datasaurus<- datasaurus_dozen
+
+#define plot aesthetic
+plot_aes = theme_minimal() +
+  theme(legend.position = "bottom",
+        text = element_text(family = "Futura Medium"),
+        axis.ticks.y = element_blank(),
+        plot.title = element_text(hjust = 0.5, vjust = 1.5),
+        plot.caption = element_text(hjust = 1, size = 10),
+        legend.text = element_text(size = 7, family = "Futura Medium")  # Adjust legend text here
+  )
+
+```
+
+In the previous lab, we worked with a data from DataSaurus. We visualized y against x for different values of the column named *"dataset"*. Now, carry out this visualization but with the following changes.
+
+### Show all the different visualizations within a single graph using *facets* in ggplot
+
+```{r fig.height=8, fig.width=8}
+ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset)) +
+  geom_point() +
+  facet_wrap(~dataset) +
+  plot_aes
+```
+
+### Create grey-scale plots
+
+```{r fig.height=8, fig.width=8}
+ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset)) +
+  geom_point() +
+  facet_wrap(~dataset) +
+  plot_aes +
+  scale_colour_grey() ### adding grey-scale after we use the aesthetic object to override the colors
+```
+
+### Change the shape of the plotted points based on the condition
+
+```{r fig.height=8, fig.width=8}
+ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset, shape = dataset)) + 
+  geom_point() +
+  facet_wrap(~dataset) +
+  plot_aes + 
+  scale_shape_manual(values = c(0:13)) +  # Specify more shapes manually
+  scale_colour_grey()
+```
+
+### Create a boxplot for each dataset
+
+```{r}
+ggplot(lab2_datasaurus, aes(x = dataset, y = x, color = dataset)) +
+  geom_boxplot() +
+  geom_half_violin(side = "l", alpha = 0.5) +  
+  geom_jitter(width = 0.2, height = 0, alpha = 0.2) +  # Adding jitter with some transparency
+  plot_aes
+
+
+```
+
+You've learned that looking at the data is important. But summary statistics can be useful too. The following dplyr-based code computes the mean of `lab2_datasaurus` for each dataset within it, for the variable x and stores it into a new dataframe.
+
+## Summary stats Dataframes
+
+```{r}
+summary_stats <- lab2_datasaurus %>%
+  summarise(
+    mean_x = mean(x, na.rm = TRUE),
+    mean_y = mean(y, na.rm = TRUE),
+    median_x = median(x, na.rm = TRUE),
+    median_y = median(y, na.rm = TRUE),
+    variance_x = var(x, na.rm = TRUE),
+    variance_y = var(y, na.rm = TRUE),
+    correlation_xy = cor(x, y, use = "complete.obs")
+  )
+
+# Print the dataframe using kable
+kable(summary_stats, caption = "Summary Statistics for x and y")
+
+```
+
+## Observations
+
+> Based on the summary stats, the mean and median values for x and y are similar across the different datasets. However, y has way more variance than X. Further, the two variables are not correlated.
+
+## Combining two sources of data in a graph
+
+> The red circle represents the means
+
+```{r fig.height=8, fig.width=8}
+ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset)) + 
+  geom_point() +
+  facet_wrap(~dataset) +
+  geom_point(aes(x = mean(x), y = mean(y)), size = 5, shape = 1, color = "red", alpha = 0.5) +  # Overlaying the mean of x and y
+  plot_aes 
+
+```
+
+## RMD vs. Quarto
+
+> that the produced visuals are much more interactive than with R-markdown
+
+## Tasks with YAML Header (B)
+
+> displayinng code for the new header... 
+
+```         
+---
+title: "PSY-503: Lab 2"
+author: "Steven Mequiti"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document: default
+  word_document: default
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+```
+
+## Extracting the code back to r
+
+```{r}
+knitr::purl("Lab-2.Rmd")
+```
+
+`{r} knitr::purl("Lab-2.Rmd")`
+
+## End of lab.
+
+:) 
