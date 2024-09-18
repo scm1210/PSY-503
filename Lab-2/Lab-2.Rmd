@@ -128,8 +128,6 @@ ggplot(lab2_datasaurus, aes(x = dataset, y = x, color = dataset)) +
 
 ```
 
-You've learned that looking at the data is important. But summary statistics can be useful too. The following dplyr-based code computes the mean of `lab2_datasaurus` for each dataset within it, for the variable x and stores it into a new dataframe.
-
 ## Summary stats Dataframes
 
 ```{r}
@@ -149,7 +147,7 @@ kable(summary_stats, caption = "Summary Statistics for x and y")
 
 ```
 
-## Observations
+### Observations
 
 > Based on the summary stats, the mean and median values for x and y are similar across the different datasets. However, y has way more variance than X. Further, the two variables are not correlated.
 
