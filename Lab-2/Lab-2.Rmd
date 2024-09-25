@@ -12,8 +12,8 @@ output:
     toc_float:
       collapsed: yes
       smooth_scroll: yes
-  pdf_document: default
-  word_document: default
+  pdf_document: yes
+  word_document: yes
   github_document:
     toc: true
     toc_depth: 2
@@ -81,6 +81,11 @@ plot_aes = theme_minimal() +
         plot.caption = element_text(hjust = 1, size = 10),
         legend.text = element_text(size = 7, family = "Futura Medium")  # Adjust legend text here
   )
+palette <- c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", 
+             "#9CC5A1", "#ADA7C9", "#BB7A5E", "#6195C6", "#4D4861", 
+             "#B0B2B8", "#D9BF77", "#A1C4FD", "#FEC5BB", "#6A0572", 
+             "#B9FBC0", "#F7D6E0")
+
 
 ```
 
@@ -91,6 +96,7 @@ In the previous lab, we worked with a data from DataSaurus. We visualized y agai
 ```{r fig.height=8, fig.width=8}
 ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset)) +
   geom_point() +
+  scale_color_manual(values = palette) +  # Use 'values' instead of 'color'
   facet_wrap(~dataset) +
   plot_aes
 ```
@@ -122,6 +128,7 @@ ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset, shape = dataset)) +
 ggplot(lab2_datasaurus, aes(x = dataset, y = x, color = dataset)) +
   geom_boxplot() +
   geom_half_violin(side = "l", alpha = 0.5) +  
+  scale_color_manual(values = palette) +  
   geom_jitter(width = 0.2, height = 0, alpha = 0.2) +  # Adding jitter with some transparency
   plot_aes
 
@@ -158,6 +165,7 @@ kable(summary_stats, caption = "Summary Statistics for x and y")
 ```{r fig.height=8, fig.width=8}
 ggplot(lab2_datasaurus, aes(x = x, y = y, color = dataset)) + 
   geom_point() +
+  scale_color_manual(values = palette) +  # Use 'values' instead of 'color'
   facet_wrap(~dataset) +
   geom_point(aes(x = mean(x), y = mean(y)), size = 5, shape = 1, color = "red", alpha = 0.5) +  # Overlaying the mean of x and y
   plot_aes 
@@ -197,7 +205,7 @@ output:
 
 ## Extracting the code back to r
 
-```{r}
+```{r eval=FALSE}
 knitr::purl("Lab-2.Rmd")
 ```
 
