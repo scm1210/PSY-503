@@ -1,0 +1,288 @@
+---
+title: "PSY 503: Lab 04 - Joins, Broom, Regression Intro"
+author: "Steven Mesquiti"
+date: "2024-10-02"
+output: 
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document: yes
+  word_document: yes
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE, fig.path = "lab_4_plots/")
+options(scipen=999)
+set.seed(123)
+
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, install = T) 
+
+# load in the data from the google drive
+data_dir = "/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/Lab-4/data"
+
+children = read.csv(file.path(data_dir, "child_height.csv"))
+parents = read.csv(file.path(data_dir, "parent_height.csv"))
+grandparents = read.csv(file.path(data_dir, "grandparent_height.csv"))
+
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+
+```
+
+# PSY 503: Lab 04 - Joins, Broom, Regression Intro
+
+
+For this lab assignment, let's imagine that Galton collected and saved height measurements of families in the following manner:
+
+a)  he denoted each of the 928 families surveyed with a family id
+b)  children's heights in families were saved in child-height.csv
+c)  parents' heights were saved in parent_height.csv
+d)  for a side project, he also collected grandparents' heights in families in to grandparent_height.csv [NOTE: this never happened]
+
+These files can be found in the following Google drive directory: <https://drive.google.com/drive/folders/1JW1KQ9DYwFC3nb3iktWBF0hNG4WfHNjP?usp=sharing>
+
+## Joins
+
+Your tasks are to:
+
+J1)  Using a join command, combine the dataframes for **children** and **parents** based on their family identifier. Display this dataframe. Save this dataframe for future use.
+
+```{r}
+data_child_parent = children|> 
+  inner_join(parents, by = "family_id")
+
+head(data_child_parent)
+
+```
+
+J2) Next, use the appropriate join command to merge the dataframe you derived from (1) and grandparent_height.csv file to produce a single dataframe that saves within one dataframe all the information across the original 3 .csv files. Display this dataframe
+
+```{r}
+data = grandparents|> 
+  inner_join(data_child_parent, by = "family_id") |> 
+  select(-child_ht.y, -parent_ht.y) |> 
+  rename(child_ht = child_ht.x, parent_ht = parent_ht.x) 
+
+data |> 
+  DT::datatable()
+```
+
+J3) While you are at it, use the appropriate join to find only those families for which all measurements across children, parents, and grandparents were available. Display this dataframe.
+
+```{r}
+data |> 
+  filter(!is.na(gparent_ht)) |> 
+  DT::datatable()
+
+```
+
+Having used different joins, lets go back to the dataframe produced in (J1), and use it for visualization and  for building regression models.
+
+## Visualization
+
+Scatterplots are the best way to visualize relationships that you are hoping to model.
+
+V1) Produce a scatterplot with children's height on the y-axis and parents' height on the x-axis. Use geom_jitter, and set transparency with the alpha parameter so that any overlapping data points are easy to spot.
+
+```{r}
+data |> 
+  ggplot(aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.1, color = "red3") +
+  labs(title = "Scatterplot of Children's Height vs. Parents' Height",
+       x = "Parents' Height (inches)",
+       y = "Children's Height (inches)") + plot_aes
+```
+
+V2) Draw the following lines on the scatterplot:
+- a horizontal line at the mean of children's heights colored in red, using geom_hline()
+- a regression line using geom_smooth() by setting its' *method* to be equal to "lm"
+- diagonal line at the points where the parents' heights are the same as the children's heights. Use geom_abline() and set the color to "dark green"
+
+
+```{r}
+data |> 
+  ggplot(aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.1, color = "red3") +
+  geom_hline(yintercept = mean(data$child_ht), color = "red") +
+  geom_smooth(method = "lm", se = FALSE, color = "dodgerblue2") +
+  geom_abline(intercept = 0, slope = 1, color = "darkgreen") +
+  labs(title = "Scatterplot of Children's Height vs. Parents' Height",
+       x = "Parents' Height (inches)",
+       y = "Children's Height (inches)") + plot_aes
+
+```
+
+## Regression
+
+While visual results are great, we want to use the full power of lm() to find estimates of model parameters that minimize error, to make predictions, and to calculate various diagnostics of model fit. 
+
+R1) Build a null model (intercept-only) using lm() for predicting children's height. Show the result of model fitting by printing the model. Show more detailed results by using the summary() command
+
+```{r}
+lm(child_ht ~ 1, data = data) |>
+summary()
+```
+
+R2)  Build a model using parents' height as the explanatory variable. Show the result of model fitting by printing the model. Show more detailed results by using the summary() command
+
+```{r}
+lm(child_ht ~ parent_ht, data = data) |>
+summary()
+```
+
+R3)  While the print() and summary() commands are useful for displaying results, it's hard to automatically extract results of model-fitting using them.
+
+Use the tidy() command in broom to save model fitting results in a new dataframe. Using this dataframe, display the coefficients of the model fit (i.e. parameter estimates of intercept and slope) of the two models.
+
+```{r}
+library(broom)
+
+null_model = lm(child_ht ~ 1, data = data) |> 
+  tidy()
+
+parent_model = lm(child_ht ~ parent_ht, data = data) |> 
+  tidy()
+
+
+null_model 
+
+parent_model
+```
+
+R4)  Use the predict() function to generate predictions for both models for three different parent heights. 40 inches, 64 inches, 75 inches. Do this with a single call of predict by passing to it the appropriate data structure with these 3 values.
+
+```{r}
+x_predict = tibble(
+  parent_ht = c(40, 64, 75)
+)
+
+
+parent_model <- lm(child_ht ~ parent_ht, data = data)
+
+# Create a tibble for predictions
+x_predict <- tibble(
+  parent_ht = c(40, 64, 75)
+)
+
+# Make predictions
+parent_predictions = predict(parent_model, newdata = x_predict)
+cat("Parent Predictions:", parent_predictions, "\n")
+
+
+null_model <- lm(child_ht ~ 1, data = data)
+
+# Create a tibble for predictions
+x_predict <- tibble(
+  parent_ht = c(40, 64, 75)
+)
+
+# Make predictions
+null_predictions = predict(null_model, newdata = x_predict)
+cat("Null Predictions:", null_predictions, "\n")
+
+```
+
+R5) Actually, lets generate predictions for a larger set of values.
+
+```{r}
+x_predict <- tibble(
+  parent_ht = seq(50, 100, by = 2) #parents' heights for which you are predicting childrens' heights
+)
+
+y_predict_null<- predict(null_model, newdata = x_predict)
+
+y_predict_one_explanatory_variable<-predict(parent_model, newdata = x_predict)
+
+cat("*Parent Predictions:*", y_predict_one_explanatory_variable, "\n")
+
+cat("Null Predictions:", y_predict_null, "\n")
+```
+
+R6) Let's plot these predictions on top of our previous scatterplot, by adding two geom_line() commands which uses this new data. Note that these geom_lines will be using data frames different from the original dataframe that was used for scatterplot.
+```{r message=TRUE, warning=TRUE}
+#two dataframes you'd use for the two geom_lines
+df_predictions_null<- x_predict %>%
+                bind_cols(y_predict_null)
+
+df_predictions_explanatory<- x_predict %>%
+                bind_cols(y_predict_one_explanatory_variable)
+
+#Reproduce your earlier scatterplot from V1 below, and add two geom_line layers
+
+data |> 
+  ggplot(aes(x = parent_ht, y = child_ht)) +
+  geom_jitter(alpha = 0.1, color = "red3") +
+  geom_hline(yintercept = mean(data$child_ht), color = "red") +
+  geom_smooth(method = "lm", se = FALSE, color = "dodgerblue2") +
+  geom_line(data = df_predictions_null, aes(x = parent_ht, y = y_predict_null), color = "purple", linetype = 2, size = 1.2) +
+  geom_line(data = df_predictions_explanatory, aes(x = parent_ht, y = y_predict_one_explanatory_variable), color = "green", linetype = 3, size = 1.2) +
+  geom_abline(intercept = 0, slope = 1, color = "darkgreen") +
+  labs(title = "Scatterplot of Children's Height vs. Parents' Height",
+       x = "Parents' Height (inches)",
+       y = "Children's Height (inches)") + 
+  xlim(min(data$parent_ht), max(data$parent_ht)) +
+  ylim(min(data$child_ht), max(data$child_ht)) +
+  plot_aes
+
+
+```
+
+Why is this way of plotting predictions generally more useful than the method we had used so far?
+
+> We get to see how the data fits the lines and vice versa.
+
+R6)  The glance() function in broom shows you many "goodness of fit" measures. Compare the r-squared values you obtain for the two models.
+
+```{r}
+null_model |>
+  glance()
+
+parent_model |>
+  glance()
+  
+```
+
+> We explain more variance with including parent height as the predictor variable. 
+
+R7)  The augment() function in broom allows you to add columns having to do with model predictions to the dataset. Use augment to create expanded tables for both models. 
+
+
+*Null* model with `augment`
+
+```{r}
+
+null_model |>
+  augment(data) |>
+  DT::datatable()
+
+```
+
+*Predictor* model with `augment`
+
+```{r}
+parent_model |>
+  augment(data) |>
+  DT::datatable()
+```
+
+Identify the two variables in this resulting dataset that when added give you the predictor variable (i.e. child's height). What do you think they are referring to?
+
+> The two variables are `.fitted` and `.resid`. `.fitted` is the predicted value of the response variable, and `.resid` is the residual value of the response variable. Theur sum gives the observed value of the response variable.

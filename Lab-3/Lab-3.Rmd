@@ -114,8 +114,9 @@ data %>%
 
 ```{r}
 data %>% 
-  select(country, pop, lifeExp) %>% 
-  mutate(lifeExp = round(lifeExp, 0)) %>%   # Round lifeExp to 0 decimal places
-  pivot_wider(names_from = lifeExp, values_from = pop) %>%  # Replace spread with pivot_wider
+  select(year,country, pop) %>% 
+  pivot_wider(names_from = country, 
+              values_from = pop,
+              names_prefix = "Population_") %>%  # Replace spread with pivot_wider
   DT::datatable()
 ```
