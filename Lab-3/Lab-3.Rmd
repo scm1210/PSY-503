@@ -34,7 +34,16 @@ set.seed(123)
 ```{r load-packages}
 if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
 library(pacman)
-pacman::p_load(tidyverse, tinytex,ggdist,gghalves,knitr,gapminder,install = T) 
+pacman::p_load(tidyverse,tinytex,ggdist,gghalves,knitr,gapminder,install = T) 
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
 ```
 
 # Lab 3 - Gapminder Data Wrangling Lab Assignment
