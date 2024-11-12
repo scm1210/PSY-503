@@ -47,6 +47,11 @@ devtools::install_github("hadley/emo")
 ```
 
 ```{r text-setup, eval=FALSE, include=FALSE}
+
+#install.packages("devtools")
+#devtools::install_version("text", version = "1.2.1", repos = "http://cran.us.r-project.org")
+
+###need to use v 1.2.1 for these analyses
 library(text)
 textrpp_install(prompt = F)
 textrpp_initialize()
@@ -160,6 +165,8 @@ In this report, I will examine the predictive validity of language-based assessm
 
 The following code demonstrates how embeddings are generated using the `textEmbed` function, specifying the second-to-last layer of BERT and concatenating token embeddings:
 
+**Example Embedding Code**
+
 ```         
 embeddings <- textEmbed(
   data = data[1:2], 
@@ -173,17 +180,17 @@ embeddings <- textEmbed(
 
 **Open Science Statement**
 
-The data and analysis code needed to reproduce the main analysis reported is available online (Insert GitHub here). The prompts and measures used in this study are available on the Open Science Framework project page (insert link here). Individual demographic and open-ended data are not posted publicly to protect the identifiability of participants. Output from analyzed text is available upon request. Study 3’s design, hypotheses, and analyses were preregistered before data collection (<https://osf.io/qac8j/?view_only=fa6a39b16a1c43a4afa2fb81d5cccb28>).
+The data and analysis code needed to reproduce the main analysis reported is available online (Insert GitHub here). The prompts and measures used in this study are available on the Open Science Framework project page (insert link here). Individual demographic and open-ended data are not posted publicly to protect the identifiability of participants. Output from analyzed text is available upon request. This design, hypotheses, and analyses were preregistered before data collection (<https://osf.io/qac8j/?view_only=fa6a39b16a1c43a4afa2fb81d5cccb28>).
 
 **Power Analysis**
 
-I conducted a power analysis and determined that at minimum I would require N = 255 to have 90% power to detect an effect size of r = 0.20 with an alpha of 0.05. To account for attrition and poor data quality, I aimed to recruit 285 participants via an online survey platform. I conducted this power analysis using the `pwr` package in R.
+I conducted a power analysis and determined that at minimum I would require N = 255 to have 90% power to detect an effect size of r = 0.20 with an alpha of 0.05. To account for attrition and poor data quality, I aimed to recruit 285 participants via an online survey platform. I conducted this power analysis using the `pwr` package in R (see Figure 1).
 
 \newpage
 
 **Figure 1**
 
-```{r, fig.cap = "Power Curve Analysis. Alpha = 0.04; Beta = 0.90"}
+```{r, fig.cap = "Power Curve Analysis. Alpha = 0.05; Beta = 0.90"}
 
 # Define sample sizes and r values
 palette = c("#772e25","#c44536", "#ee9b00","#005f73","#001219", "#0a9396", "#94d2bd", "#e9d8a6", "#ca6702", "#bb3e03", "#9b2226","#6195C6", "#ADA7C9")
@@ -217,7 +224,7 @@ Participants (*N* = 285) were recruited using the online platform, Prolific. Par
 
 **Procedure**
 
-I conducted a between-person study to examine how well and for what types of psychological facets can we predict psychological & subjective well-being using natural language. First, participants were asked to write responses to open-ended questions about their satisfaction with life (i.e., Overall in your life, are you satisfied or not?) and autonomy (i.e., In what ways are your decisions influenced (or not) by what others are doing?). The prompt order was randomized. Then, participants responded to validated self-report measures of their satisfaction with life (SWLS-5; [@pavot2008]) and psychological well-being (Ryff-18; @; @ryff), which were presented in a randomized order. Participants also rated how useful they found the exercise and completed demographic questions before exiting the survey.
+I conducted a between-person study to examine how well and for what types of psychological facets can we predict psychological & subjective well-being using natural language. First, participants were asked to write responses to open-ended questions about their satisfaction with life (i.e., Overall in your life, are you satisfied or not?) and autonomy (i.e., In what ways are your decisions influenced (or not) by what others are doing?). The prompt order was randomized. Then, participants responded to validated self-report measures of their satisfaction with life (SWLS-5; [@pavot2008]) and psychological well-being (Ryff-18; @ryff), which were presented in a randomized order. Participants also rated how useful they found the exercise and completed demographic questions before exiting the survey.
 
 **Instruments**
 
@@ -249,15 +256,15 @@ Participants engaged with open-ended questions assessing their satisfaction with
 
 **Analytic Method**
 
-All analyses were conducted in text (v 1.2.1; [Kjell et al., 2023)](https://www.zotero.org/google-docs/?aMQ9oG), an R-package designed to allow social scientists to leverage state-of-the-art natural language processing and machine learning techniques. The current analyses involved the application of contextual word embeddings from pre-trained language models to quantify language-based assessments of well-being and then training the word embedding to predict self-reported well-being scores in the pre-intervention survey using ridge regression. Results using post-intervention scores were similar and are reported in the Supplementary Information.
+All analyses were conducted in text (v 1.2.1; [@kjell2023], an R-package designed to allow social scientists to leverage state-of-the-art natural language processing and machine learning techniques. The current analyses involved the application of contextual word embeddings from pre-trained language models to quantify language-based assessments of well-being and then training the word embedding to predict self-reported well-being scores in the pre-intervention survey using ridge regression. Results using post-intervention scores were similar and are reported in the Supplementary Information.
 
 **Text Analysis Methods**
 
-We generated contextual word embeddings of free-response answers using BERT-large-uncased. BERT-large-uncased came from Google’s open-source model called BERT (“bert-large-uncased”; henceforth BERT; [Devlin et al., 2019)](https://www.zotero.org/google-docs/?78kalk) and represented tokens (c.f. words) with 24 layers comprising 1024 dimensions each. We used only the second to last layer (the 23rd layer) as the embeddings, which was informed by research that demonstrated this layer yielded reliable performances for document- and human-level predictions [(Devlin et al., 2019; Ganesan et al., 2021)](https://www.zotero.org/google-docs/?IslETs). This approach transforms the semantic content of a passage of natural language into one word embedding vector for each prompt response provided by each participant. Embedding vectors representing responses to prompts of the same well-being component were further averaged together to create one vector per component of well-being. \
+We generated contextual word embeddings of free-response answers using BERT-large-uncased. BERT-large-uncased came from Google’s open-source model called BERT (“bert-large-uncased”; henceforth BERT; @devlin) and represented tokens (c.f. words) with 24 layers comprising 1024 dimensions each. We used only the second to last layer (the 23rd layer) as the embeddings, which was informed by research that demonstrated this layer yielded reliable performances for document- and human-level predictions [@ganesan2021]. This approach transforms the semantic content of a passage of natural language into one word embedding vector for each prompt response provided by each participant. Embedding vectors representing responses to prompts of the same well-being component were further averaged together to create one vector per component of well-being. \
 
 **Training word embeddings to rating scales**
 
-To examine the relationship between language-based well-being assessments and self-reported ratings on survey items, we used ridge regression and fit the embeddings of a given component to predict participants' survey component scores. Model Training was employed using k-fold cross-validation, where the training set was split for analysis (75% of the training data is used to create models with different penalties) and assessment (25% used to evaluate the different models). We then computed Pearson’s correlations between the predicted and observed scores. For all analyses with multiple comparisons, we used a False Discovery Rate correction [(Benjamini & Hochberg, 1995)](https://www.zotero.org/google-docs/?PrRBqI) to correct for inflation of Type-I error.
+To examine the relationship between language-based well-being assessments and self-reported ratings on survey items, we used ridge regression and fit the embeddings of a given component to predict participants' survey component scores. Model Training was employed using k-fold cross-validation, where the training set was split for analysis (75% of the training data is used to create models with different penalties) and assessment (25% used to evaluate the different models). We then computed Pearson’s correlations between the predicted and observed scores. For all analyses with multiple comparisons, we used a False Discovery Rate correction [@benjamini1995] to correct for inflation of Type-I error.
 
 **Example Modeling code**
 
@@ -404,14 +411,13 @@ Autonomy_subscale_results <-
 saveRDS(Autonomy_subscale_results,file.path(data_dir,"models/Autonomy_subscale_results.RDS"))
 ```
 
-We tested the pre-registered hypothesis: Can language-based assessments of participants’ well-being predict survey components such as autonomy and life satisfaction? Results showed that predictions generated from language-based assessments of satisfaction with life prompts strongly correlated with survey ratings of satisfaction with life (r = 0.624, p \< 0.001; see Figure 3). Additionally, predictions from language-based assessments of autonomy moderately predicted participants’ survey ratings of autonomy, although with a smaller effect (r = 0.413, p \< 0.001). Further, predictions from language-based assessments of satisfaction with life embeddings moderately correlated with survey scores of self-acceptance (r = 0.501, p \< 0.001), purpose (r = 0.224, p \< 0.001), positive relationships (r = 0.153, p \< 0.01), personal growth (r = 0.117, p \< 0.05), environmental mastery (r = 0.44. p \< 0.001), and autonomy (r = 0.131. p \< 0.05). On the other hand predictions from language-based assessments of autonomy correlated with survey scores for satisfaction with life (r = 0.207, p \< 0.001), self-acceptance (r = 0.175, p \< 0.01), and environmental mastery scores (r = 0.17, p \< 0.01).
+We tested the pre-registered hypothesis: Can language-based assessments of participants’ well-being predict survey components such as autonomy and life satisfaction? Results showed that predictions generated from language-based assessments of satisfaction with life prompts strongly correlated with survey ratings of satisfaction with life (*r* = 0.624, *p* \< 0.001; see Figure 2). Additionally, predictions from language-based assessments of autonomy moderately predicted participants’ survey ratings of autonomy, although with a smaller effect (*r* = 0.413, *p* \< 0.001). Further, predictions from language-based assessments of satisfaction with life embeddings moderately correlated with survey scores of self-acceptance (*r* = 0.501, *p* \< 0.001), purpose (*r* = 0.224, *p* \< 0.001), positive relationships (*r* = 0.153, *p* \< 0.01), personal growth (*r* = 0.117, *p* \< 0.05), environmental mastery (*r* = 0.44. *p* \< 0.001), and autonomy (*r* = 0.131. *p* \< 0.05). On the other hand predictions from language-based assessments of autonomy correlated with survey scores for satisfaction with life (*r* = 0.207, p \< 0.001), self-acceptance (*r* = 0.175, *p* \< 0.01), and environmental mastery scores (*r* = 0.17, *p* \< 0.01).
 
-\newpage
 **Figure 2**
 
 *Correlations between Observed and Predicted Well-being Scores.*
 
-```{r Figure 2, fig.height=8, fig.width=8,fig.cap="Values displayed are Pearson's product-moment correlation with RMSE values displayed in parentheses. P-values were calculated using FDR-correction to adjust for multiple comparisons. * pFDR-corrected < 0.05, ** pFDR-corrected < 0.01, *** pFDR-corrected < 0.001.",fig.align='center'}
+```{r Figure 2, fig.height=8, fig.width=8,fig.cap="Values displayed are Pearson's product-moment correlation with RMSE values displayed in parentheses. P-values were calculated using FDR-correction to adjust for multiple comparisons. * pFDR-corrected < 0.05, ** pFDR-corrected < 0.01, *** pFDR-corrected < 0.001.", fig.align='center'}
 SWLS_subscale_results <- SWLS_subscale_results %>%
   mutate(
     correlation = as.numeric(correlation),
@@ -473,6 +479,8 @@ all_heat +
   ) 
 
 ```
+
+\newpage
 
 # Discussion
 
