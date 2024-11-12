@@ -1,0 +1,230 @@
+---
+title             : "Predicting Psychological and Subjective Well-being through Language"
+shorttitle        : "Language Assessments of Well-being"
+
+author:  
+  - name          : "Steven Mesquiti"
+    affiliation   : ["1"]
+    corresponding : yes    # Define only one corresponding author
+    address       : "Princeton University, 
+                    Department of Psychology,
+                    Peretsman Scully Hall,
+                    Princeton, NJ 08540"
+    email         : "sm9518@princeton.edu"
+    role: # Contributorship roles
+      - "Conceptualization, Data Collection, Data Analysis, Writing"
+
+  - name          : "Danielle Cosme"
+    affiliation   : ["2"]
+    role:
+      - "Conceptualization, Data Collection, Writing"
+
+  - name          : "Erik Nook"
+    affiliation   : ["1"]
+    role:
+      - "Conceptualization, Writing"
+
+  - name          : "Emily Falk"
+    affiliation   : ["2,3,4,5"]
+    role:
+      - "Conceptualization, Writing"
+
+  - name          : "Shannon Burns"
+    affiliation   : ["6,7"]
+    role:
+      - "Conceptualization, Writing"
+
+affiliation:
+  - id            : "1"
+    institution   : "Department of Psychology, Princeton University, NJ 08540"
+  - id            : "2"
+    institution   : "Annenberg School for Communication, University of Pennsylvania, PA 19104"
+  - id            : "3"
+    institution   : "Department of Psychology, University of Pennsylvania, PA 19104"
+  - id            : "4"
+    institution   : "Wharton Marketing Department, University of Pennsylvania, PA 19104"
+  - id            : "5"
+    institution   : "Wharton Operations, Information and Decisions Department, University of Pennsylvania, PA 19104"
+  - id            : "6"
+    institution   : "Department of Psychological Science, Pomona College, CA 91711"
+  - id            : "7"
+    institution   : "Department of Neuroscience, Pomona College, CA 91711"
+
+abstract: |
+  Well-being comprises two distinct dimensions: subjective (pleasant life) and psychological (meaningful life), each with underlying components. Advances in natural language processing have enhanced automated assessment of psychological states and traits, allowing text-based assessments to capture subjective well-being with unprecedented accuracy. However, language's predictive ability for psychological well-being and its supporting components remains unstudied. This research investigates how effectively and for which facets of well-being we can predict from people's speech or writing. Across three studies, we examined the ability of language-based assessments to predict self-reported scores of psychological and subjective well-being components. Participants completed language-based assessments of life satisfaction and autonomy, along with self-reported measures of psychological and subjective well-being. We used contextual word embeddings generated from AI-based transformers to predict satisfaction with life and psychological well-being scores. Results showed that predicted scores from word embeddings of open-ended assessments correlated with out-of-sample scores (rs = 0.16-0.63) and generalized to other psychological well-being components (rs = 0.15-0.50), supporting the interconnected nature of well-being components in language use. However, we did not achieve the accuracy of previous studies (rs = 0.72-0.85), and autonomy was consistently less predictable than satisfaction with life. These findings provide emerging evidence that while psychological well-being is accessible through language, it may be more challenging to assess than subjective well-being.
+
+keywords          : "Well-being, Language-based Assessments, Transformers"
+wordcount         : "212 words"
+
+floatsintext      : Yes
+linenumbers       : no
+draft             : Yes
+mask              : no
+
+figurelist        : Yes
+tablelist         : Yes
+footnotelist      : no
+
+classoption       : "doc"
+output            : papaja::apa6_pdf
+
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, broom,papaja,tinytex,corrr,NatParksPalettes,pwr,pandoc,install = T) 
+tinytex::install_tinytex(force = T)
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r}
+# load in the data from the google drive
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+
+```
+
+\newpage
+
+## Introduction
+
+Well-being is central to human functioning and its development is essential for human flourishing. The effective development of well-being has been linked to successful functioning in many domains such as more effective learning, increased creativity, prosocial behaviors, and the formation of positive relationships [@diener1984; @huppert2013; @oishi2007]. As a result, the accurate measurement of well-being is critical for understanding, predicting, and promoting psychological health at the individual, sample, and population-level [@allin2017].
+
+The assessment of well-being is well-suited for language-based methods because well-being assessments concern how an individual uniquely evaluates their current life and functioning [@ruggeri2020]. One key advantage of using language-based methods to measure well-being is their ability to capture an individual’s appraisal of their quality of life. Words provide a natural means for people to express their state of mind, making language a powerful tool for understanding well-being. Previous research has well-documented the promise of using the combination of computational linguistics and psychological theory [@kern2016; @tausczik2010] to assess psychological states and traits. For example, language can be used to estimate changes in relationship health [@seraj2021], life satisfaction [@kjell2022], psychopathology [@hur2024; @nook2022; @rai2024; @stade2023], and emotion [@ashokkumar2021; @mesquiti2024]. As a result, the pairing of these fields allows scientists to leverage state-of-the-art methods to unobtrusively detect subtle changes in word use, revealing significant information about an individual's internal experiences and, consequently, their well-being [@boyd2024]
+
+In this report, I will examine the predictive validity of language-based assessments of well-being by comparing them to close-ended self-report measures of well-being in an online sample (N = 285). This dataset was collected during my role as a lab manager at Penn, and I will use it as a basis for an upcoming paper.
+
+## Methods
+
+### Word Embedding Example
+
+The following code demonstrates how embeddings are generated using the `textEmbed` function, specifying the second-to-last layer of BERT and concatenating token embeddings:
+
+```         
+embeddings <- textEmbed(
+  data = data[1:2], 
+  model = "bert-large-uncased",
+  layers = -2,  # Grabbing the second-to-last layer
+  aggregation_from_layers_to_tokens = "concatenate",
+  aggregation_from_tokens_to_texts = "mean",
+  aggregation_from_tokens_to_word_types = "mean",
+  keep_token_embeddings = TRUE
+```
+
+## Participants
+
+## Power Analysis
+
+I conducted a power analysis and determined that at minimum I would require N = 255 to have 90% power to detect an effect size of r = 0.20 with an alpha of 0.05. To account for attrition and poor data quality, I aimed to recruit 285 participants via an online survey platform. I conducted this power analysis using the `pwr` package in R.
+
+**Figure 1**
+
+```{r, fig.cap = "Power Curve Analysis. Alpha = 0.04; Beta = 0.90"}
+
+# Define sample sizes and r values
+palette = c("#772e25","#c44536", "#ee9b00","#005f73","#001219", "#0a9396", "#94d2bd", "#e9d8a6", "#ca6702", "#bb3e03", "#9b2226","#6195C6", "#ADA7C9")
+
+ns <- seq(100, 500, 50)
+correlation_values <- seq(0.1, 0.45, 0.05)
+
+# Generate combinations of sample sizes and correlation values
+dataEff <- expand.grid(r = correlation_values, n = ns)
+
+# Perform power analysis for correlation tests
+dataEff %>%
+  group_by(r, n) %>%
+  do({
+    test <- pwr.r.test(n = .$n[[1]], r = .$r[[1]], sig.level = 0.05, power = NULL) %>% broom::tidy()
+  }) %>%
+  ggplot(aes(r, power, color = as.factor(n))) +
+  labs(y = 'power',x = 'correlation (r)') + 
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = palette) + 
+  theme_apa(box = TRUE) +
+  geom_hline(yintercept = 0.90, linetype = "dashed",alpha = 0.9) +  # Change to dashed line
+  geom_vline(xintercept = 0.2, linetype = "dotted",alpha = 0.5)    # Change to dotted line
+
+```
+
+## Material
+
+### Prompts
+
++----------------------------+---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| *Prompt Type*              |   | *Prompt*                                                                                                                                                                                                     |
++============================+===+==============================================================================================================================================================================================================+
+| **Autonomy**               |   | In what ways are your decisions influenced (or not) by what others are doing? Please write at least 5 sentences below that discuss the ways your decisions are influenced (or not) by what others are doing. |
+|                            |   |                                                                                                                                                                                                              |
+|                            |   | There are no right or wrong answers. The most important thing is to talk about those aspects that are most important and meaningful to you.                                                                  |
++----------------------------+---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                            |   |                                                                                                                                                                                                              |
++----------------------------+---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Satisfaction with Life** |   | There are no right or wrong answers. The most important thing is to talk about those aspects that are most important and meaningful to you.                                                                  |
++----------------------------+---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+**Predictor variables**
+
+Contextual word embeddings generated from participant responses to prompts about Autonomy and Satisfaction with Life (see Table 1)
+
+**Outcome variables**
+
+Self-reported ratings generated from participant responses to the following validated measures: 
+
+**Satisfaction with Life**
+
+Satisfaction with life (SWLS-5;[@pavot2008])
+
+**Psychological Well-being**
+
+Psychological well-being (Ryff-18; [@ryff])
+
+## Procedure
+
+Participants will be excluded from analyses if they do not comply with study instructions. I will exclude individual responses that are missing from analyses, as well as text that raises suspicions of bots [caps lock, off-topic, repeating question text], short texts [\< 10 words], and failed attention checks. Outliers will be winsorized and missing behavioral data will be imputed using Multivariate Imputation by Chained Equations.
+
+## Data analysis
+
+The analysis will employ transformer-based natural language processing and machine learning techniques, utilizing the R `text` package [@kjell2023]. Specifically, I will generate word embeddings using Google’s `bert-large-uncased` model [@devlin], which comprises 24 layers of 1024 dimensions each. Research has shown that the 23rd layer of BERT provides reliable results for document- and human-level predictions [@devlin; @ganesan2021]. I will use this layer to represent words and phrases as embeddings, which will then be applied in predictive models.
+
+To examine the relationship between language-based assessments with rating scale scores of well-being, I will fit the embeddings in a ridge regression model to predict the out-of-sample self-reported scale scores for psychological (Ryff well-being scores; [@ryff]), subjective (satisfaction with life scores; [@pavot2008]), and overall well-being (the sum of participant satisfaction with life and psychological well-being scores) machine learning. Training will be employed using k-fold cross-validation, where the training set is further split for analysis (75% of the training data will be used to create models with different penalties) and assessment (25% will be used to evaluate the different models).
+
+**Example Modeling code**
+
+```         
+model <- textTrainRegression(
+    x = embeddings$texts$Language_based_Assessment,
+    y = df[Well-being],
+    force_train_method = "regression",
+    save_output = "all",
+    method_cor = "pearson",
+    eval_measure = "rmse",
+    p_adjust_method = "fdr",
+    model_description = "N = 285")
+```
+
+# Results
+
+# Discussion
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::

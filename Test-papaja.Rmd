@@ -1,0 +1,155 @@
+---
+title             : "Steven's Test Mansucript"
+shorttitle        : "Test Manuscript"
+
+author: 
+  - name          : "Steven Mesquiti"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Princeton University, 
+    Department of Psychology,
+Peretsman Scully Hall,
+Princeton, NJ 08540"
+    email         : "sm9518@princeton.edu"
+    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+      - "Conceptualization, Data Collection, Data Analysis, Writing"
+
+
+affiliation:
+  - id            : "1"
+    institution   : "Department of Psychology, Princeton University"
+authornote: |
+  "This is my author note"
+
+abstract: |
+  Well-being comprises two distinct dimensions: subjective (pleasant life) and psychological (meaningful life), each with underlying components. Advances in natural language processing have enhanced automated assessment of psychological states and traits, allowing text-based assessments to capture subjective well-being with unprecedented accuracy. However, language's predictive ability for psychological well-being and its supporting components remains unstudied. This research investigates how effectively and for which facets of well-being we can predict from people's speech or writing. Across three studies, we examined the ability of language-based assessments to predict self-reported scores of psychological and subjective well-being components. Participants completed language-based assessments of life satisfaction and autonomy, along with self-reported measures of psychological and subjective well-being. We used contextual word embeddings generated from AI-based transformers to predict satisfaction with life and psychological well-being scores. Results showed that predicted scores from word embeddings of open-ended assessments correlated with out-of-sample scores (rs = 0.16-0.63) and generalized to other psychological well-being components (rs = 0.15-0.50), supporting the interconnected nature of well-being components in language use. However, we did not achieve the accuracy of previous studies (rs = 0.72-0.85), and autonomy was consistently less predictable than satisfaction with life. These findings provide emerging evidence that while psychological well-being is accessible through language, it may be more challenging to assess than subjective well-being.   
+  
+  <!-- https://tinyurl.com/ybremelq -->
+  
+keywords          : "Upheavals, LIWC, Social Media, Reddit, Language"
+wordcount         : "X words"
+
+bibliography      : "/Users/sm9518/Downloads/Well-being-Prediction.bib"
+
+floatsintext      : no
+linenumbers       : no
+draft             : Yes
+mask              : no
+
+figurelist        : Yes
+tablelist         : Yes
+footnotelist      : no
+
+classoption       : "doc"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, broom,papaja,tinytex,corrr,install = T) 
+tinytex::install_tinytex(force = T)
+r_refs("/Users/sm9518/Downloads/Well-being-Prediction.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r}
+# load in the data from the google drive
+data_dir = "/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/Lab-5/data"
+
+parents = read.csv(file.path(data_dir, "galton_child_parent_heights.csv"))
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+
+```
+
+# Class Assignment 
+
+## Sample Text
+
+# Predictive Validity of Language-Based Assessments of Well-being
+
+## Introduction
+
+In this report, I will examine the predictive validity of language-based assessments of well-being by comparing them to close-ended self-report measures of well-being in an online sample (N = 285). This dataset was collected during my role as a lab manager at Penn, and I will use it as a basis for an upcoming paper.
+
+The analysis will employ transformer-based natural language processing and machine learning techniques, utilizing the R `text` package [@Kjell et al., 2022]. Specifically, I will generate word embeddings using Google’s `bert-large-uncased` model [@Devlin et al., 2019], which comprises 24 layers of 1024 dimensions each. Research has shown that the 23rd layer of BERT provides reliable results for document- and human-level predictions [@Devlin et al., 2019]; [@Ganesan et al., 2021]. I will use this layer to represent words and phrases as embeddings, which will then be applied in predictive models.
+
+## Method
+
+### Word Embedding Example
+
+The following code demonstrates how embeddings are generated using the `textEmbed` function, specifying the second-to-last layer of BERT and concatenating token embeddings:
+
+```
+embeddings <- textEmbed(
+  data = data[1:2], 
+  model = "bert-large-uncased",
+  layers = -2,  # Grabbing the second-to-last layer
+  aggregation_from_layers_to_tokens = "concatenate",
+  aggregation_from_tokens_to_texts = "mean",
+  aggregation_from_tokens_to_word_types = "mean",
+  keep_token_embeddings = TRUE
+```
+
+
+## Generating a Summary Table of the Parents Dataset
+
+Below, we use `papaja` to generate a summary table of the parents dataset. As we can see, the mean parent height is `r round(mean(parents$parent_ht), 2)`, with a standard deviation of `r round(sd(parents$parent_ht), 2)`. The mean child height is `r round(mean(parents$child_ht), 2)`, with a standard deviation of `r round(sd(parents$child_ht), 2)`. Please see Table 1. 
+
+### Table 1
+
+```{r}
+parents = parents %>%
+  select(parent_ht, child_ht)
+
+my_table <- t(apply(parents, 2, function(x) # Create data
+  round(c(Mean = mean(x), SD = sd(x), Min = min(x), Max = max(x)), 2)
+))
+
+
+apa_table(
+  my_table
+  , align = c("l", rep("r", 3))
+  , caption = "A summary table of the parents dataset."
+)
+
+```
+
+
+# Methods
+
+We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+
+## Participants
+
+## Material
+
+## Procedure
+
+## Data analysis
+
+We used `r cite_r("r-references.bib")` for all our analyses.
+
+# Results
+
+# Discussion
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::

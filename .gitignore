@@ -1,3 +1,9 @@
+*.tex
+
+*.pdf
+
+*.bib
+
 .DS_Store
 
 */data

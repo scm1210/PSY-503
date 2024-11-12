@@ -1,0 +1,47 @@
+---
+title: "PSY 503: Lab 06 - Correlations, Regression with Dummy Coding"
+author: "Steven Mesquiti"
+date: ""
+output: 
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document: yes
+  word_document: yes
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# PSY 503: Lab 05 - Correlations, Regression with Dummy Coding
+## Correlation and Regression
+```{r}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, broom,papaja,tinytex, install = T) 
+
+# load in the data from the google drive
+data_dir = "/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/Lab-6/data"
+
+parents = read.csv(file.path(data_dir, "galton_child_parent_heights.csv"))
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+
+```
