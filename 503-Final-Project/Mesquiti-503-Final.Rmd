@@ -1,0 +1,484 @@
+---
+title             : "Predicting Psychological and Subjective Well-being through Language"
+shorttitle        : "Language Assessments of Well-being"
+author:  
+  - name          : "Steven Mesquiti"
+    affiliation   : ["1"]
+    corresponding : yes    # Define only one corresponding author
+    address       : "Princeton University, 
+                    Department of Psychology,
+                    Peretsman Scully Hall,
+                    Princeton, NJ 08540"
+    email         : "sm9518@princeton.edu"
+    role: # Contributorship roles
+      - "Conceptualization, Data Collection, Data Analysis, Writing"
+
+affiliation:
+  - id            : "1"
+    institution   : "Department of Psychology, Princeton University, NJ 08540"
+ 
+abstract: |
+  Well-being comprises two distinct dimensions: subjective (pleasant life) and psychological (meaningful life), each with underlying components. Advances in natural language processing have enhanced automated assessment of psychological states and traits, allowing text-based assessments to capture subjective well-being with unprecedented accuracy. However, language's predictive ability for psychological well-being and its supporting components remains unstudied. This research investigates how effectively and for which facets of well-being we can predict from people's speech or writing. Across three studies, we examined the ability of language-based assessments to predict self-reported scores of psychological and subjective well-being components. Participants completed language-based assessments of life satisfaction and autonomy, along with self-reported measures of psychological and subjective well-being. We used contextual word embeddings generated from AI-based transformers to predict satisfaction with life and psychological well-being scores. Results showed that predicted scores from word embeddings of open-ended assessments correlated with out-of-sample scores (rs = 0.16-0.63) and generalized to other psychological well-being components (rs = 0.15-0.50), supporting the interconnected nature of well-being components in language use. However, we did not achieve the accuracy of previous studies (rs = 0.72-0.85), and autonomy was consistently less predictable than satisfaction with life. These findings provide emerging evidence that while psychological well-being is accessible through language, it may be more challenging to assess than subjective well-being.
+keywords          : "Well-being, Language-based Assessments, Transformers"
+wordcount         : "212 words"
+floatsintext      : Yes
+linenumbers       : no
+draft             : No
+mask              : no
+figurelist        : Yes
+tablelist         : Yes
+footnotelist      : no
+classoption       : "doc"
+output            : papaja::apa6_pdf
+
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+pacman::p_load(
+  tidyverse, broom, papaja, tinytex, corrr, NatParksPalettes, pwr, pandoc, rlang,
+  plotrix, ggpubr, caret, kableExtra, reactable, knitr, DT, stringr, ggwordcloud,
+  Metrics, scales, rsample, purrr, psych, tibble, install = TRUE
+)
+r_refs("r-references.bib")
+
+devtools::install_github("hadley/emo")
+```
+
+```{r text-setup, eval=FALSE, include=FALSE}
+library(text)
+textrpp_install(prompt = F)
+textrpp_initialize()
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r}
+# load in the data from the google drive
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+
+```
+
+```{r helper-functions}
+calculate_and_store_rmse <- function(column_name, model_names, actual_values, predicted_values) {
+  results_list <- list()
+  
+  for (col_name in model_names) {
+    if (grepl(column_name, col_name)) {
+      rmse_value <- Metrics::rmse(actual_values[[column_name]], predicted_values[[col_name]])
+      results_list <- c(results_list, list(data.frame(Model = col_name, RMSE = rmse_value)))
+    }
+  }
+  
+  return(results_list)
+}
+
+# Initialize an empty list to store results
+results <- list()
+
+
+table <- function(correlation_data) {
+  # Convert the character columns to factors for better rendering
+  correlation_data$descriptions <- gsub("^Q[0-9]+\\.\\.(.+?)\\.\\.Transcription", "\\1", correlation_data$descriptions)
+  correlation_data$descriptions <- gsub("(\\d)_([A-Za-z])", "\\1~\\2", correlation_data$descriptions)
+  correlation_data$descriptions <- as.factor(correlation_data$descriptions)
+  correlation_data$alternative <- as.factor(correlation_data$alternative)
+
+  # Round the numeric columns to three decimal places
+  correlation_data$correlation <- round(as.numeric(correlation_data$correlation), 2)
+  correlation_data$t_statistics <- round(as.numeric(correlation_data$t_statistics), 3)
+  correlation_data$p_value <- sapply(correlation_data$p_value, function(p) {
+    ifelse(as.numeric(p) < 0.001, "< .001", 
+           ifelse(as.numeric(p) == 1, "1.000", 
+                  gsub("0.(.*)", ".\\1", sprintf("%.3f", as.numeric(p)))))
+  })
+  
+  # Apply similar formatting to the p_value_corrected column
+  correlation_data$p_value_corrected <- sapply(correlation_data$p_value_corrected, function(p) {
+    ifelse(as.numeric(p) < 0.001, "< .001", 
+           ifelse(as.numeric(p) == 1, "1.000", 
+                  gsub("0.(.*)", ".\\1", sprintf("%.3f", as.numeric(p)))))
+  })
+
+  # Add the RMSE column
+  correlation_data$RMSE <- round(as.numeric(correlation_data$RMSE), 2)
+
+  # Add the confidence interval (assuming you have 'conf_int_low' and 'conf_int_high' columns)
+  correlation_data$confidence_interval <- paste0("[", 
+                                                 round(as.numeric(correlation_data$conf_int_low), 2), 
+                                                 ", ", 
+                                                 round(as.numeric(correlation_data$conf_int_high), 2), 
+                                                 "]")
+
+  # Create the DataTable
+  datatable(correlation_data, extensions = 'FixedColumns', 
+            filter = list(position = 'top', clear = FALSE),
+            options = list(search = list(regex = TRUE, caseInsensitive = FALSE), pageLength = 25))
+}
+```
+
+```{r load-data}
+data_dir = '/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/503-Final-Project/data'
+df = read_csv(file.path(data_dir, 'behavioral/data_clean.csv'))
+
+df = df %>% 
+  rename_with(~ gsub("\\.", " ", .)) |> 
+  mutate(Well_being = (`PWB mean` + `SWLS mean`))
+
+#load the embeddings
+embeddings = readRDS(file.path(data_dir, 'embeddings/Study3-WBP-embeddings.rds'))
+
+
+```
+
+\newpage
+
+# Introduction
+
+Well-being is central to human functioning and its development is essential for human flourishing. The effective development of well-being has been linked to successful functioning in many domains such as more effective learning, increased creativity, prosocial behaviors, and the formation of positive relationships [@diener1984; @huppert2013; @oishi2007]. As a result, the accurate measurement of well-being is critical for understanding, predicting, and promoting psychological health at the individual, sample, and population-level [@allin2017]
+
+The assessment of well-being is well-suited for language-based methods because well-being assessments concern how an individual uniquely evaluates their current life and functioning [@ruggeri2020]. One key advantage of using language-based methods to measure well-being is their ability to capture an individual’s appraisal of their quality of life. Words provide a natural means for people to express their state of mind, making language a powerful tool for understanding well-being. Previous research has well-documented the promise of using the combination of computational linguistics and psychological theory [@kern2016; @tausczik2010] to assess psychological states and traits. For example, language can be used to estimate changes in relationship health [@seraj2021], life satisfaction [@kjell2022], psychopathology [@hur2024; @nook2022; @rai2024; @stade2023], and emotion [@ashokkumar2021; @mesquiti2024]. As a result, the pairing of these fields allows scientists to leverage state-of-the-art methods to unobtrusively detect subtle changes in word use, revealing significant information about an individual's internal experiences and, consequently, their well-being [@boyd2024].
+
+In this report, I will examine the predictive validity of language-based assessments of well-being by comparing them to close-ended self-report measures of well-being in an online sample (N = 285). This dataset was collected during my role as a lab manager at Penn, and I will use it as a basis for an upcoming paper.
+
+# Methods
+
+**Word Embeddings Example**
+
+The following code demonstrates how embeddings are generated using the `textEmbed` function, specifying the second-to-last layer of BERT and concatenating token embeddings:
+
+```         
+embeddings <- textEmbed(
+  data = data[1:2], 
+  model = "bert-large-uncased",
+  layers = -2,  # Grabbing the second-to-last layer
+  aggregation_from_layers_to_tokens = "concatenate",
+  aggregation_from_tokens_to_texts = "mean",
+  aggregation_from_tokens_to_word_types = "mean",
+  keep_token_embeddings = TRUE
+```
+
+**Open Science Statement**
+
+The data and analysis code needed to reproduce the main analysis reported is available online (Insert GitHub here). The prompts and measures used in this study are available on the Open Science Framework project page (insert link here). Individual demographic and open-ended data are not posted publicly to protect the identifiability of participants. Output from analyzed text is available upon request. Study 3’s design, hypotheses, and analyses were preregistered before data collection (<https://osf.io/qac8j/?view_only=fa6a39b16a1c43a4afa2fb81d5cccb28>).
+
+**Power Analysis**
+
+I conducted a power analysis and determined that at minimum I would require N = 255 to have 90% power to detect an effect size of r = 0.20 with an alpha of 0.05. To account for attrition and poor data quality, I aimed to recruit 285 participants via an online survey platform. I conducted this power analysis using the `pwr` package in R.
+
+\newpage
+
+**Figure 1**
+
+```{r, fig.cap = "Power Curve Analysis. Alpha = 0.04; Beta = 0.90"}
+
+# Define sample sizes and r values
+palette = c("#772e25","#c44536", "#ee9b00","#005f73","#001219", "#0a9396", "#94d2bd", "#e9d8a6", "#ca6702", "#bb3e03", "#9b2226","#6195C6", "#ADA7C9")
+
+ns <- seq(100, 500, 50)
+correlation_values <- seq(0.1, 0.45, 0.05)
+
+# Generate combinations of sample sizes and correlation values
+dataEff <- expand.grid(r = correlation_values, n = ns)
+
+# Perform power analysis for correlation tests
+dataEff %>%
+  group_by(r, n) %>%
+  do({
+    test <- pwr.r.test(n = .$n[[1]], r = .$r[[1]], sig.level = 0.05, power = NULL) %>% broom::tidy()
+  }) %>%
+  ggplot(aes(r, power, color = as.factor(n))) +
+  labs(y = 'power',x = 'correlation (r)') + 
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = palette) + 
+  theme_apa(box = TRUE) +
+  geom_hline(yintercept = 0.90, linetype = "dashed",alpha = 0.9) +  # Change to dashed line
+  geom_vline(xintercept = 0.2, linetype = "dotted",alpha = 0.5)    # Change to dotted line
+
+```
+
+**Participants**
+
+Participants (*N* = 285) were recruited using the online platform, Prolific. Participants were eligible to participate in our study if they did not possess a current diagnosis of a psychiatric disorder (e.g., schizophrenia, depression, bipolar, anxiety, post-traumatic stress, or borderline personality disorder). Participants were aged 18-79 (*M* = 38.16, *SD* = 12.28) and reported the following gender identities: 48.07% men, 50.88% women, 0.70% non-binary, and 0.35% genderqueer. No participants were excluded due to failed attention checks or data quality issues (*N* = 285). This study was approved by the University of Pennsylvania Institutional Review Board and all participants gave informed consent.
+
+**Procedure**
+
+I conducted a between-person study to examine how well and for what types of psychological facets can we predict psychological & subjective well-being using natural language. First, participants were asked to write responses to open-ended questions about their satisfaction with life (i.e., Overall in your life, are you satisfied or not?) and autonomy (i.e., In what ways are your decisions influenced (or not) by what others are doing?). The prompt order was randomized. Then, participants responded to validated self-report measures of their satisfaction with life (SWLS-5; [@pavot2008]) and psychological well-being (Ryff-18; @; @ryff), which were presented in a randomized order. Participants also rated how useful they found the exercise and completed demographic questions before exiting the survey.
+
+**Instruments**
+
+**Close-ended Self-Report.** Participants’ subjective well-being was captured using the Satisfaction with Life Scale (5 items; Diener et al., 1985), which demonstrated good levels of internal consistency (alpha = 0.918). Psychological well-being was captured with the Ryff Psychological Well-Being scale (18 items; Ryff & Keyes, 1995), which consists of subscales including Autonomy, Environmental Mastery, Personal Growth, Positive relations with others, Purpose in life, and Self-acceptance. The Ryff Well-being scale exhibited acceptance levels of reliability (alpha = 0.833).
+
+**Language-based Assessment**
+
+Participants engaged with open-ended questions assessing their satisfaction with life and autonomy (a component of psychological well-being; see Table 3). Participants engaged with open-ended questions assessing their satisfaction with life and autonomy (a component of psychological well-being; see Table X).
+
+\newpage
+
+**Table 1**
+
+*Prompt Types and Text for Study*
+
++------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| *Prompt type*          | *Prompt*                                                                                                                                                                                                     |
++------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Autonomy               | In what ways are your decisions influenced (or not) by what others are doing? Please write at least 5 sentences below that discuss the ways your decisions are influenced (or not) by what others are doing. |
+|                        |                                                                                                                                                                                                              |
+|                        | There are no right or wrong answers. The most important thing is to talk about those aspects that are most important and meaningful to you.                                                                  |
++------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                        |                                                                                                                                                                                                              |
++------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Satisfaction with Life | Overall in life, are you satisfied or not? Please write at least 5 sentences below that indicate whether you are satisfied or not.                                                                           |
+|                        |                                                                                                                                                                                                              |
+|                        | There are no right or wrong answers. The most important thing is to talk about those aspects that are most important and meaningful to you.                                                                  |
++------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+**Analytic Method**
+
+All analyses were conducted in text (v 1.2.1; [Kjell et al., 2023)](https://www.zotero.org/google-docs/?aMQ9oG), an R-package designed to allow social scientists to leverage state-of-the-art natural language processing and machine learning techniques. The current analyses involved the application of contextual word embeddings from pre-trained language models to quantify language-based assessments of well-being and then training the word embedding to predict self-reported well-being scores in the pre-intervention survey using ridge regression. Results using post-intervention scores were similar and are reported in the Supplementary Information.
+
+**Text Analysis Methods**
+
+We generated contextual word embeddings of free-response answers using BERT-large-uncased. BERT-large-uncased came from Google’s open-source model called BERT (“bert-large-uncased”; henceforth BERT; [Devlin et al., 2019)](https://www.zotero.org/google-docs/?78kalk) and represented tokens (c.f. words) with 24 layers comprising 1024 dimensions each. We used only the second to last layer (the 23rd layer) as the embeddings, which was informed by research that demonstrated this layer yielded reliable performances for document- and human-level predictions [(Devlin et al., 2019; Ganesan et al., 2021)](https://www.zotero.org/google-docs/?IslETs). This approach transforms the semantic content of a passage of natural language into one word embedding vector for each prompt response provided by each participant. Embedding vectors representing responses to prompts of the same well-being component were further averaged together to create one vector per component of well-being. \
+
+**Training word embeddings to rating scales**
+
+To examine the relationship between language-based well-being assessments and self-reported ratings on survey items, we used ridge regression and fit the embeddings of a given component to predict participants' survey component scores. Model Training was employed using k-fold cross-validation, where the training set was split for analysis (75% of the training data is used to create models with different penalties) and assessment (25% used to evaluate the different models). We then computed Pearson’s correlations between the predicted and observed scores. For all analyses with multiple comparisons, we used a False Discovery Rate correction [(Benjamini & Hochberg, 1995)](https://www.zotero.org/google-docs/?PrRBqI) to correct for inflation of Type-I error.
+
+**Example Modeling code**
+
+```         
+model <- textTrainRegression(
+    x = embeddings$texts$Language_based_Assessment,
+    y = df[Well-being],
+    force_train_method = "regression",
+    save_output = "all",
+    method_cor = "pearson",
+    eval_measure = "rmse",
+    p_adjust_method = "fdr",
+    model_description = "N = 285")
+```
+
+# Results
+
+```{r training-SWLS-models}
+rds_file_path <- file.path(data_dir, "models/SWLS_subscale.RDS") #update with the path to each model
+
+
+if (!file.exists(rds_file_path)) {
+  # If the RDS file does not exist, create the model
+  SWLS_subscale <- textTrainLists(
+    x = embeddings$texts$`SWLS-Text`, # Use satisfaction with life
+    y = df[2:10], # Variables of interest are in columns 3-10
+    force_train_method = "regression",
+    save_output = "all",
+    method_cor = "pearson",
+    eval_measure = "rmse",
+    p_adjust_method = "fdr",
+    model_description = "SWLS embeddings predicting well-being, N = 285",
+    multicore = TRUE
+  )
+  
+  # Save the model output to an RDS file
+  saveRDS(SWLS_subscale, rds_file_path)
+} else {
+  # If the RDS file already exists, load the data from it
+  SWLS_subscale <- readRDS(rds_file_path)
+}
+
+
+filtered_predictions <- na.omit(SWLS_subscale$predictions[1:9])
+SWLS_subscale_predictions <- as.data.frame(filtered_predictions)
+models <- c(colnames(SWLS_subscale$predictions[1:9]))
+
+data = df %>% 
+  select(2:10) 
+
+
+
+results = list()
+column_names = colnames(data)
+for (column_name in column_names) {
+  result <- calculate_and_store_rmse(
+    column_name = column_name,
+    model_names = models,
+    actual_values = data,
+    predicted_values = SWLS_subscale_predictions
+  )
+  results <- c(results, result)
+  # Convert the results list to a data frame
+SWLS_rmse <- results %>%
+  bind_rows() %>%
+  distinct()
+}
+
+SWLS_subscale_results <- head(SWLS_subscale$results, 9)
+SWLS_subscale_results$RMSE <- SWLS_rmse$RMSE
+
+SWLS_subscale_results <- 
+  SWLS_subscale_results %>%
+  mutate(
+    prompt = ifelse(grepl("SWLS", descriptions), "SWLS", NA),
+    outcome = ifelse(grepl("embeddings\\$texts\\$`SWLS-Text`_", descriptions), 
+                     gsub(".*`SWLS-Text`_", "", descriptions),
+                     NA))
+
+#table(SWLS_subscale_results)
+saveRDS(SWLS_subscale_results,file.path(data_dir,"models/SWLS_subscale_results.RDS"))
+
+```
+
+```{r train-autonomy-models}
+rds_file_path <- file.path(data_dir, "models/autonomy_subscale.RDS") #update with the path to each model
+
+
+if (!file.exists(rds_file_path)) {
+  # If the RDS file does not exist, create the model
+  autonomy_subscale <- textTrainLists(
+    x = embeddings$texts$`Autonomy-Text`, # Use satisfaction with life
+    y = df[2:10], # Variables of interest are in columns 3-10
+    force_train_method = "regression",
+    save_output = "all",
+    method_cor = "pearson",
+    eval_measure = "rmse",
+    p_adjust_method = "fdr",
+    model_description = "Autonomy embeddings predicting well-being, N = 285",
+    multicore = TRUE
+  )
+  
+  # Save the model output to an RDS file
+  saveRDS(autonomy_subscale, rds_file_path)
+} else {
+  # If the RDS file already exists, load the data from it
+  autonomy_subscale <- readRDS(rds_file_path)
+}
+
+
+filtered_predictions <- na.omit(autonomy_subscale$predictions[1:9])
+Autonomy_subscale_predictions <- as.data.frame(filtered_predictions)
+models <- c(colnames(autonomy_subscale$predictions[1:9]))
+
+results = list()
+column_names = colnames(data)
+for (column_name in column_names) {
+  result <- calculate_and_store_rmse(
+    column_name = column_name,
+    model_names = models,
+    actual_values = data,
+    predicted_values = Autonomy_subscale_predictions
+  )
+  results <- c(results, result)
+  # Convert the results list to a data frame
+Autonomy_rmse <- results %>%
+  bind_rows() %>%
+  distinct()
+}
+
+# Associate RMSE with subscale results
+Autonomy_subscale_results <- head(autonomy_subscale$results, 9)
+Autonomy_subscale_results$RMSE <- Autonomy_rmse$RMSE
+
+Autonomy_subscale_results <- 
+  Autonomy_subscale_results %>%
+  mutate(
+    prompt = ifelse(grepl("Autonomy-", descriptions), "Autonomy", NA),
+    outcome = ifelse(grepl("embeddings\\$texts\\$`Autonomy-Text`_", descriptions), 
+                     gsub(".*`Autonomy-Text`_", "", descriptions),
+                     NA)
+  )
+#table(Autonomy_subscale_results)
+saveRDS(Autonomy_subscale_results,file.path(data_dir,"models/Autonomy_subscale_results.RDS"))
+```
+
+We tested the pre-registered hypothesis: Can language-based assessments of participants’ well-being predict survey components such as autonomy and life satisfaction? Results showed that predictions generated from language-based assessments of satisfaction with life prompts strongly correlated with survey ratings of satisfaction with life (r = 0.624, p \< 0.001; see Figure 3). Additionally, predictions from language-based assessments of autonomy moderately predicted participants’ survey ratings of autonomy, although with a smaller effect (r = 0.413, p \< 0.001). Further, predictions from language-based assessments of satisfaction with life embeddings moderately correlated with survey scores of self-acceptance (r = 0.501, p \< 0.001), purpose (r = 0.224, p \< 0.001), positive relationships (r = 0.153, p \< 0.01), personal growth (r = 0.117, p \< 0.05), environmental mastery (r = 0.44. p \< 0.001), and autonomy (r = 0.131. p \< 0.05). On the other hand predictions from language-based assessments of autonomy correlated with survey scores for satisfaction with life (r = 0.207, p \< 0.001), self-acceptance (r = 0.175, p \< 0.01), and environmental mastery scores (r = 0.17, p \< 0.01).
+
+\newpage
+**Figure 2**
+
+*Correlations between Observed and Predicted Well-being Scores.*
+
+```{r Figure 2, fig.height=8, fig.width=8,fig.cap="Values displayed are Pearson's product-moment correlation with RMSE values displayed in parentheses. P-values were calculated using FDR-correction to adjust for multiple comparisons. * pFDR-corrected < 0.05, ** pFDR-corrected < 0.01, *** pFDR-corrected < 0.001.",fig.align='center'}
+SWLS_subscale_results <- SWLS_subscale_results %>%
+  mutate(
+    correlation = as.numeric(correlation),
+    df = as.numeric(df),
+    p_value = as.numeric(p_value),
+    p_value_corrected = as.numeric(p_value_corrected),
+    t_statistics = as.numeric(t_statistics)
+  )
+
+
+SWLS_heat =  ggplot(SWLS_subscale_results, aes(x = prompt, y = outcome, fill = correlation)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(correlation, 3)), color = "black", size = 4) +
+  geom_text(aes(label = sprintf("(%s)", round(RMSE, 3))), color = "black", size = 3, vjust = 2) +  # Add RMSE values
+
+  scale_fill_gradient2(low = "dodgerblue",
+                       mid = "#FFFFCC",
+                       high = "#c44536") +
+    geom_text(data = subset(SWLS_subscale_results, p_value_corrected < 0.05), aes(label = "*", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) +
+    geom_text(data = subset(SWLS_subscale_results, p_value_corrected < 0.01), aes(label = "**", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) +
+    geom_text(data = subset(SWLS_subscale_results, p_value_corrected < 0.001), aes(label = "***", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) + plot_aes +  theme_apa(box = TRUE)
+
+Autonomy_subscale_results <- Autonomy_subscale_results %>%
+  mutate(
+    correlation = as.numeric(correlation),
+    df = as.numeric(df),
+    p_value = as.numeric(p_value),
+    p_value_corrected = as.numeric(p_value_corrected),
+    t_statistics = as.numeric(t_statistics)
+  )
+
+
+Autonomy_heat =  ggplot(Autonomy_subscale_results, aes(x = prompt, y = outcome, fill = correlation)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(correlation, 3)), color = "black", size = 4) +
+  geom_text(aes(label = sprintf("(%s)", round(RMSE, 3))), color = "black", size = 3, vjust = 2) +  # Add RMSE values
+
+  scale_fill_gradient2(low = "dodgerblue",
+                       mid = "#FFFFCC",
+                       high = "#c44536") +
+    geom_text(data = subset(Autonomy_subscale_results, p_value_corrected < 0.05), aes(label = "*", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) +
+    geom_text(data = subset(Autonomy_subscale_results, p_value_corrected < 0.01), aes(label = "**", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) +
+    geom_text(data = subset(Autonomy_subscale_results, p_value_corrected < 0.001), aes(label = "***", x = prompt, y = outcome, hjust = 1),
+              color = "black", size = 4, vjust = -0.5) + plot_aes +  theme_apa(box = TRUE)
+
+all_heat = ggarrange(Autonomy_heat, SWLS_heat, ncol = 2,nrow = 1, common.legend = T)
+
+all_heat +
+  ggtitle("Subscale Predictions") +
+  plot_aes  +  
+  theme(
+    plot.title = element_text(hjust = 0.5, vjust = 1.5),
+    plot.caption = element_text(hjust = 1, size = 10)
+  ) 
+
+```
+
+# Discussion
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::
