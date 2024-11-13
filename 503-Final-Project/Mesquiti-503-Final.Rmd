@@ -208,13 +208,13 @@ dataEff %>%
     test <- pwr.r.test(n = .$n[[1]], r = .$r[[1]], sig.level = 0.05, power = NULL) %>% broom::tidy()
   }) %>%
   ggplot(aes(r, power, color = as.factor(n))) +
-  labs(y = 'power',x = 'correlation (r)') + 
+  labs(y = 'power', x = 'correlation (r)', color = 'Sample Size') +  # Set custom legend label
   geom_point() +
   geom_line() +
   scale_color_manual(values = palette) + 
   theme_apa(box = TRUE) +
-  geom_hline(yintercept = 0.90, linetype = "dashed",alpha = 0.9) +  # Change to dashed line
-  geom_vline(xintercept = 0.2, linetype = "dotted",alpha = 0.5)    # Change to dotted line
+  geom_hline(yintercept = 0.90, linetype = "dashed", alpha = 0.9) +  # Change to dashed line
+  geom_vline(xintercept = 0.2, linetype = "dotted", alpha = 0.5)    # Change to dotted line
 
 ```
 
@@ -228,7 +228,7 @@ I conducted a between-person study to examine how well and for what types of psy
 
 **Instruments**
 
-**Close-ended Self-Report.** Participants’ subjective well-being was captured using the Satisfaction with Life Scale (5 items; Diener et al., 1985), which demonstrated good levels of internal consistency (alpha = 0.918). Psychological well-being was captured with the Ryff Psychological Well-Being scale (18 items; Ryff & Keyes, 1995), which consists of subscales including Autonomy, Environmental Mastery, Personal Growth, Positive relations with others, Purpose in life, and Self-acceptance. The Ryff Well-being scale exhibited acceptance levels of reliability (alpha = 0.833).
+**Close-ended Self-Report.** Participants’ subjective well-being was captured using the Satisfaction with Life Scale (5 items; [@pavot2008]), which demonstrated good levels of internal consistency (alpha = 0.918). Psychological well-being was captured with the Ryff Psychological Well-Being scale (18 items; @ryff), which consists of subscales including Autonomy, Environmental Mastery, Personal Growth, Positive relations with others, Purpose in life, and Self-acceptance. The Ryff Well-being scale exhibited acceptance levels of reliability (alpha = 0.833).
 
 **Language-based Assessment**
 
