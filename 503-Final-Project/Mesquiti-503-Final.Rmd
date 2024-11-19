@@ -136,7 +136,12 @@ table <- function(correlation_data) {
 ```
 
 ```{r load-data}
+
+#update this pathway to wherever you download the OSF folder to
 data_dir = '/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/503-Final-Project/data'
+
+
+
 df = read_csv(file.path(data_dir, 'behavioral/data_clean.csv'))
 
 df = df %>% 
@@ -180,7 +185,7 @@ embeddings <- textEmbed(
 
 **Open Science Statement**
 
-The data and analysis code needed to reproduce the main analysis reported is available online [here](https://github.com/scm1210/PSY-503/tree/main/503-Final-Project). The prompts and measures used in this study are available on the Open Science Framework project page (insert link here). Individual demographic and open-ended data are not posted publicly to protect the identifiability of participants. Output from analyzed text is available upon request. This design, hypotheses, and analyses were preregistered before data collection (<https://osf.io/qac8j/?view_only=fa6a39b16a1c43a4afa2fb81d5cccb28>).
+The data and analysis code needed to reproduce the main analysis reported is available online [here](https://github.com/scm1210/PSY-503/tree/main/503-Final-Project). The prompts and measures used in this study are available on the Open Science Framework project page (<https://osf.io/cvnd7/>). Individual demographic and open-ended data are not posted publicly to protect the identifiability of participants. Output from analyzed text is available upon request. This design, hypotheses, and analyses were preregistered before data collection (<https://osf.io/qac8j/?view_only=fa6a39b16a1c43a4afa2fb81d5cccb28>).
 
 **Power Analysis**
 
