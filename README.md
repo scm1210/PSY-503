@@ -15,7 +15,7 @@ Repo for 503 Fall Semester
 │   │   │   ├── Figure 2-1.png
 │   │   │   ├── create-heat-map-1.pdf
 │   │   │   ├── unnamed-chunk-2-1.pdf
-│   │   │   └── unnamed-chunk-2-1.png
+│   │   │  
 │   │   └── references.bib
 │   ├── Proposal
 │   │   └── Mesquiti_503_project_plan.gdoc
@@ -35,20 +35,12 @@ Repo for 503 Fall Semester
 ├── Lab-1
 │   ├── Lab-1.Rmd
 │   └── lab1_plots
-│       ├── circle-plot-1.png
-│       ├── dino-plot-1.png
-│       └── star-plot-1.png
+│       
 ├── Lab-2
 │   ├── Lab-2.R
 │   ├── Lab-2.Rmd
 │   └── lab_2_plots
-│       ├── unnamed-chunk-2-1.png
-│       ├── unnamed-chunk-3-1.png
-│       ├── unnamed-chunk-4-1.png
-│       ├── unnamed-chunk-5-1.png
-│       ├── unnamed-chunk-6-1.png
-│       ├── unnamed-chunk-7-1.png
-│       └── unnamed-chunk-8-1.png
+│      
 ├── Lab-3
 │   └── Lab-3.Rmd
 ├── Lab-4
@@ -58,9 +50,7 @@ Repo for 503 Fall Semester
 │   │   ├── grandparent_height.csv
 │   │   └── parent_height.csv
 │   └── lab_4_plots
-│       ├── unnamed-chunk-11-1.png
-│       ├── unnamed-chunk-4-1.png
-│       └── unnamed-chunk-5-1.png
+│       
 ├── Lab-5
 │   ├── Lab-5.Rmd
 │   └── data
