@@ -1,0 +1,174 @@
+---
+title: "PSY 503: Lab 07"
+author: "Steven Mesquiti"
+date: ""
+output: 
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  pdf_document: yes
+  word_document: yes
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# PSY 503: Lab 05 - Correlations, Regression with Dummy Coding
+## Correlation and Regression
+```{r}
+if (!require("pacman")) install.packages("pacman") #run this if you don't have pacman 
+library(pacman)
+pacman::p_load(tidyverse, broom,papaja,tinytex, performance,lmtest,install = T) 
+
+# load in the data from the google drive
+data_dir = "/Users/sm9518/Library/CloudStorage/GoogleDrive-sm9518@princeton.edu/My Drive/Classes/PSY-503/Lab-7/data"
+
+parents = load(file.path(data_dir, "parenthood.Rdata"))
+
+palette = c("#772e25", "#c44536", "#ee9b00", "#197278", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861", "grey50")
+palette_condition = c("#ee9b00", "#c44536","#005f73", "#283d3b", "#9CC5A1", "#6195C6", "#ADA7C9", "#4D4861")
+plot_aes = theme_minimal() +
+  theme(legend.position = "top",
+        legend.text = element_text(size = 8),
+        text = element_text(size = 12, family = "Futura Medium"),
+        axis.text = element_text(color = "black"),
+        axis.ticks.y = element_blank())
+```
+
+The focus of this lab is on evaluating data to check if linear regression assumptions are being met and fitting a multiple regression model to data.
+
+We'll be working with the 'Parenthood' dataset, created by Dr. Danielle Navarro, which presents an interesting application of multiple regression. 
+
+The dataset captures 100 days of supposed observations of sleep patterns and mood. She quantified her daily grumpiness on a scale ranging from 0 (not at all grumpy) to 100 (extremely grumpy).
+
+Each day, she recorded three key variables:
+her grumpiness level,
+the amount of sleep she got, and
+the amount of sleep her infant son got.
+
+
+First, let's load the data
+```{r}
+
+names(parenthood)<- c("dan.sleep", "baby.sleep", "dan.grump", "day")
+
+parenthood |> 
+head() |> 
+DT::datatable()
+```
+
+
+To get a good idea of the dataset, it's worth visualizing it using multiple scatterplots.
+
+# Scatterplots of the data {.tabset}
+
+## Danielle's Sleep vs Grumpiness
+
+```{r}
+parenthood |> 
+  ggplot(aes(x = dan.sleep, y = dan.grump)) +
+  geom_point() +
+  labs(title = "Danielle's Sleep vs Grumpiness",
+       x = "Danielle's Sleep",
+       y = "Danielle's Grumpiness") +
+  plot_aes
+```
+
+## Baby's Sleep vs Grumpiness
+
+```{r}
+parenthood |> 
+  ggplot(aes(x = baby.sleep, y = dan.grump)) +
+  geom_point() +
+  labs(title = "Danielle's Sleep vs Grumpiness",
+       x = "Danielle's Sleep",
+       y = "Danielle's Grumpiness") +
+  plot_aes
+```
+
+## Baby's Sleep vs Danielle's Grumpiness
+
+```{r}
+parenthood |> 
+  ggplot(aes(x = baby.sleep, y = dan.grump)) +
+  geom_point() +
+  labs(title = "Danielle's Sleep vs Grumpiness",
+       x = "Danielle's Sleep",
+       y = "Danielle's Grumpiness") +
+  plot_aes
+```
+
+One possible explanation of Danielle's grumpiness is that it is influence by the amount of sleep she has had, and the amount of sleep that her baby has had. What would be a simple multiple regression model that captures this? Define and fit it to the data with lm()
+
+(Hint: 2 predictors)
+```{r}
+lm_model <- lm(dan.grump ~ dan.sleep + baby.sleep, data = parenthood)
+
+lm_model |> 
+  summary()
+```
+
+
+Having fit the model to the data, we now have access to both, the fitted values and the residuals. This means that the regression assumptions can also be assessed :)
+
+Use the model check function from the performance package to assess model assumptions visually.
+It takes as input the fitted model and the list of tests.
+Only giving the model as input however produces a more exhaustive lists of checks. 
+
+
+```{r fig.height=12, fig.width=12}
+library(performance)
+performance::check_model(lm_model)
+```
+
+What do you observe? For any explanations of the observations make sure that you mention it in terms of the variables on the x and y axes of the plots that are generated.
+
+> The data appears to be normally distuibuted baset on the distributions. The residuals vs fitted plot shows a random pattern, which is good. The residuals vs dan.sleep and residuals vs baby.sleep plots show no pattern, which is also good. The residuals vs leverage plot shows no points with high leverage, which is good. The residuals vs squared residuals plot shows no pattern, which is good. 
+
+Note that while these visual model checks give you a qualitative idea of whether the assumptions are met, each of the regression assumptions also has corresponding quantitative tests. These tests are often based on appropriate hypotheses tests that are relevant for a given assumption. 
+
+E.g. a test for normality of residuals could be based on the null hypothesis that the residuals are indeed normal. But this gets rejected if the p-value generated by the test is lesser than our threshold (e.g. < 0.05). This is in fact the "Shapiro-Wilk test". 
+
+Run the shapiro test for normality of residuals. 
+shapiro.test() takes as input the residuals of your model which can be found via the residuals() function or via relevant functions if you are using broom. 
+
+```{r}
+residuals = residuals(lm_model)
+shapiro.test(residuals) 
+```
+
+What is the outcome of the Shapiro-Wilk normality test? Does it match you assessment (for normality) from the visual model check?
+
+> The p-value is 0.84, which is greater than the threshold of 0.05. This means that we fail to reject the null hypothesis that the residuals are normally distributed.
+
+```{r}
+
+#Add text
+lmtest::bptest(lm_model)
+```
+
+Similarly the Breusch-Pagan test -- bptest() in the lmtest package, checks for the assumption of constant variance. Carry it out and see if it matches your assessment from the visual model check 
+
+> It matches my visual tests and the Shapiro-Wilks. 
+
+The point to note is that there are several tests for testing assumptions as well, and sometimes the test you may want to use will depend on your modeling scenario.  
+
+---
+
+Bonus Question: If the underlying research question Navarro intended to explore was whether her son's sleep patterns had any significant relationship with her grumpiness, beyond what could be explained by her own sleep patterns,how would you think of solving this question?
+
+(Hint: this question suggests that she is thinking of two different models of the data generating process)
+
+> You coudl run two models and compare the two with R-squared
+
+
